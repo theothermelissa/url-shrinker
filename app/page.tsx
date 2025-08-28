@@ -1,95 +1,74 @@
-import Image from "next/image";
+"use client";
+
+import { redirect } from "next/navigation";
 import styles from "./page.module.css";
+import { useState } from "react";
 
 export default function Home() {
+  const [shortUrl, setShortUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsLoading(true);
+    try {
+      const url = formData.get("url");
+      const response = await fetch("/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShortUrl(data.short_url);
+      } else {
+        console.error("Failed to create short URL");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+        <h1>URL Shortener</h1>
+        <form action={handleSubmit}>
+          <input type="text" name="url" placeholder="Enter URL" required />
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? "Creating..." : "Create"}
+          </button>
+        </form>
+        <div className={styles.resultContainer}>
+          {shortUrl ? (
+            <div className={styles.result}>
+              <h2>Success!</h2>
+              <p>Your shortened URL is: </p>
+              <p>
+                <b>{shortUrl}</b>
+              </p>
+              <div className={styles.buttonContainer}>
+                <button onClick={() => navigator.clipboard.writeText(shortUrl)}>
+                  Copy Short URL
+                </button>
+                <button onClick={() => redirect(shortUrl)}>
+                  Test Short URL
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.result}>
+              <p>
+                Enter your url, then click the button to (surprise!) create a
+                shortened url from it. Give it a shot!
+              </p>
+            </div>
+          )}
         </div>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
